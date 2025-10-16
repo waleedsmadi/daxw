@@ -1,0 +1,628 @@
+#!/bin/bash
+
+
+TOOLS=(python3 curl wget git go SecLists jq sublist3r_v2 amass assetfinder subfinder gobuster gau waymore katana dirsearch httpx)
+
+
+
+
+
+
+
+############################### Install Fcuntions ###############################
+function update_pk(){
+	echo -e "\e[32mUpdating the packages...\e[0m"
+	if command -v apt &> /dev/null; then
+		sudo apt update
+	elif command -v pacman &> /dev/null; then
+		sudo pacman -Syu --noconfirm
+	elif command -v dnf &> /dev/null; then
+		sudo dnf check-update
+	elif command -v yum &> /dev/null; then
+		sudo yum check-update
+	else
+		echo -e "\e[31mCan not select the package manager! please install tools manually!\e[0m"
+		exit 1
+	fi
+		
+}
+
+
+function install_git(){
+	echo -e "\e[32mStart install git...\e[0m"
+	if command -v apt &> /dev/null; then
+		sudo apt install -y git
+	elif command -v pacman &> /dev/null; then
+		sudo pacman -S --noconfirm git
+	elif command -v dnf &> /dev/null; then
+		sudo dnf install -y git
+	elif command -v yum &> /dev/null; then
+		sudo yum install -y git
+	else
+		echo -e "\e[31mCan not select the package manager! Please install (git) manually!\e[0m"
+		exit 1
+	fi
+	
+	
+	if ! command -v git &> /dev/null; then
+		echo -e "\e[31mgit installation failed! Please install (git) manually!\e[0m"
+		exit 1
+	fi
+}
+
+
+function install_python3(){
+	echo -e "\e[32mStart install python3...\e[0m"
+	if command -v apt &> /dev/null; then
+		sudo apt install -y python3 python3-pip python3-venv 
+	elif command -v pacman &> /dev/null; then
+		sudo pacman -S --noconfirm python python-pip 
+	elif command -v dnf &> /dev/null; then
+		sudo dnf install -y python3 python3-pip
+	elif command -v yum &> /dev/null; then
+		sudo yum install -y python3 python3-pip python3-venv
+	else
+		echo -e "\e[31mCan not select the Pakage manager! Please install (python3) manually!\e[0m"
+		exit 1
+	fi
+	
+	
+	if ! command -v python3 &> /dev/null; then
+		echo -e "\e[31mPython 3 installation failed! Please install (python3 + pip3 + python3-env) manually!\e[0m"
+		exit 1
+	fi
+	
+}
+
+
+function install_curl(){
+	echo -e "\e[32mStart install curl...\e[0m"
+	if command -v apt &> /dev/null; then
+		sudo apt install -y curl
+	elif command -v pacman &> /dev/null; then
+		sudo pacman -Sy --noconfirm curl
+	elif command -v dnf &> /dev/null; then
+		sudo dnf install -y curl
+	elif command -v yum &> /dev/null; then
+		sudo yum install -y curl
+	else
+		echo -e "\e[31mCan not select the Pakage manager! Please install (curl) manually!\e[0m"
+		exit 1
+	fi
+	
+	
+	if ! command -v curl &> /dev/null; then
+		echo -e "\e[31mcurl installation failed! Please install (curl) manually!\e[0m"
+		exit 1
+	fi
+}
+
+
+
+function install_wget(){
+	echo -e "\e[32mStart install wget...\e[0m"
+	if command -v apt &> /dev/null; then
+		sudo apt install -y wget
+	elif command -v pacman &> /dev/null; then
+		sudo pacman -Sy --noconfirm wget
+	elif command -v dnf &> /dev/null; then
+		sudo dnf install -y wget
+	elif command -v yum &> /dev/null; then
+		sudo yum install -y wget
+	else
+		echo -e "\e[31mCan not select the Pakage manager! Please install (wget) manually!\e[0m"
+		exit 1
+	fi
+	
+	
+	if ! command -v wget &> /dev/null; then
+		echo -e "\e[31mwget installation failed! Please install (wget) manually!\e[0m"
+		exit 1
+	fi
+}
+
+
+
+function install_jq(){
+	echo -e "\e[32mStart install jq...\e[0m"
+	if command -v apt &> /dev/null; then
+		sudo apt install -y jq
+	elif command -v pacman &> /dev/null; then
+		sudo pacman -Sy --noconfirm jq
+	elif command -v dnf &> /dev/null; then
+		sudo dnf install -y jq
+	elif command -v yum &> /dev/null; then
+		sudo yum install -y jq
+	else
+		echo -e "\e[31mCan not select the Pakage manager! Please install (jq) manually!\e[0m"
+		exit 1
+	fi
+	
+	
+	if ! command -v jq &> /dev/null; then
+		echo -e "\e[31mjq installation failed! Please install (jq) manually!\e[0m"
+		exit 1
+	fi
+}
+
+
+
+function install_sublist3r_v2(){
+	echo -e "\e[32mStart install sublist3r_v2...\e[0m"
+	git clone https://github.com/hxlxmj/sublist3rV2.git ~/Sublist3r_V2
+	python3 -m venv ~/sublist3r_v2_env
+	source ~/sublist3r_v2_env/bin/activate
+	
+	cd ~/Sublist3r_V2
+	pip3 install -r requirements.txt
+	pip3 install .
+	
+	
+	sudo cp ~/sublist3r_v2_env/bin/sublist3r_v2 /usr/local/bin/
+	sudo chmod +x /usr/local/bin/sublist3r_v2
+	deactivate
+	cd -
+	
+	
+	if ! command -v sublist3r_v2 &> /dev/null; then
+		echo -e "\e[31msublist3r_v2 installation failed! Please install (sublist3r_v2) manually!\e[0m"
+		exit 1
+	fi
+}
+
+
+function install_waymore(){
+	echo -e "\e[32mStart install waymore...\e[0m"
+	git clone https://github.com/xnl-h4ck3r/waymore.git
+	python3 -m venv ~/waymore_env
+	source ~/waymore_env/bin/activate
+	cd ~/waymore
+	pip3 install -r requirements.txt
+	pip3 install .
+	sudo cp ~/waymore_env/bin/waymore /usr/local/bin/
+	sudo chmod +x /usr/local/bin/waymore
+	deactivate
+	cd -
+	
+	
+	if ! command -v waymore &> /dev/null; then
+		echo -e "\e[31mwaymore installation failed! Please install (waymore) manually!\e[0m"
+		exit 1
+	fi
+}
+
+
+function install_amass(){
+	echo -e "\e[32mStart install amass...\e[0m"
+	go install -v github.com/owasp-amass/amass/v4/...@v4.2.0
+
+		
+	if ! command -v amass &> /dev/null; then
+		echo -e "\e[31mamass installation failed! Please install (amass) manually!\e[0m"
+		exit 1
+	fi
+	
+}
+
+
+
+function install_assetfinder(){
+	echo -e "\e[32mStart install assetfinder...\e[0m"
+	go install github.com/tomnomnom/assetfinder@latest
+
+	
+	if ! command -v assetfinder &> /dev/null; then
+		echo -e "\e[31massetfinder installation failed! Please install (assetfinder) manually!\e[0m"
+		exit 1
+	fi
+}
+
+
+
+function install_subfinder(){
+	echo -e "\e[32mStart install subfinder...\e[0m"
+	go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest
+
+	
+	if ! command -v subfinder &> /dev/null; then
+		echo -e "\e[31msubfinder installation failed! Please install (subfinder) manually!\e[0m"
+		exit 1
+	fi
+}
+
+
+function install_httpx(){
+	echo -e "\e[32mStart install httpx...\e[0m"
+	go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest
+	
+	if ! command -v httpx &> /dev/null; then
+		echo -e "\e[31mhttpx installation failed! Please install (httpx) manually!\e[0m"
+		exit 1
+	fi
+}
+
+
+
+
+function install_gobuster(){
+	echo -e "\e[32mStart install gobuster...\e[0m"
+	go install github.com/OJ/gobuster/v3@latest
+
+	if ! command -v gobuster &> /dev/null; then
+		echo -e "\e[31mgobuster installation failed! Please install (gobuster) manually!\e[0m"
+		exit 1
+	fi
+
+}
+
+
+
+function install_dirsearch(){
+	echo -e "\e[32mStart install dirsearch...\e[0m"
+	git clone https://github.com/maurosoria/dirsearch.git --depth 1 ~/dirsearch
+	python3 -m venv ~/dirsearch-env
+	source ~/dirsearch-env/bin/activate
+	cd ~/dirsearch
+	
+	pip3 install -r requirements.txt
+	pip3 install .
+	
+	sudo cp ~/dirsearch-env/bin/dirsearch /usr/local/bin/
+	sudo chmod +x /usr/local/bin/dirsearch
+	deactivate
+	cd -
+	
+	if ! command -v dirsearch &> /dev/null; then
+		echo -e "\e[31mdirsearch installation failed! Please install (dirsearch) manually!\e[0m"
+		exit 1
+	fi
+}
+
+
+
+function install_gau(){
+	echo -e "\e[32mStart install gau...\e[0m"
+ 	go install github.com/lc/gau/v2/cmd/gau@latest
+
+	if ! command -v gau &> /dev/null; then
+		echo -e "\e[31mgau installation failed! Please install (gau) manually!\e[0m"
+		exit 1
+	fi
+}
+
+
+
+function install_katana(){
+	echo -e "\e[32mStart install katana...\e[0m"
+ 	go install github.com/projectdiscovery/katana/cmd/katana@latest
+
+	
+	if ! command -v katana &> /dev/null; then
+		echo -e "\e[31mkatana installation failed! Please install (katana) manually!\e[0m"
+		exit 1
+	fi
+}
+
+
+
+
+function install_seclists(){
+	echo -e "\e[32mStart install SecLists...\e[0m"
+	git clone https://github.com/danielmiessler/SecLists.git ~/SecLists
+	
+	if [[ ! -e ~/SecLists ]]; then
+		echo -e "\e[31mSecLists installation failed! Please install (SecLists) manually!\e[0m"
+		exit 1
+	fi
+}
+
+
+
+function install_go(){
+	echo -e "\e[32mStart install go...\e[0m"
+	echo -e "\e[32mInstalling go ...\e[0m"
+
+	last_version=$(curl -s https://go.dev/VERSION?m=text | awk 'NR==1')
+	
+    	arch=$(uname -m)
+    	case "$arch" in
+        	x86_64|amd64) arch="amd64" ;;
+        	aarch64|arm64) arch="arm64" ;;
+        	*) echo "[x] unsupported arch: $arch"; return 1 ;;
+    	esac
+	file_name="${last_version}.linux-${arch}.tar.gz"
+	url="https://go.dev/dl/${file_name}"
+	
+	wget "$url"
+	sudo rm -rf /usr/local/go
+	sudo tar -C /usr/local -xzf "$file_name"
+	rm "$file_name"
+	
+	
+	
+    	shell_name=$(basename "$SHELL")
+    	rcfile="$HOME/.${shell_name}rc"
+	
+	
+    	if ! grep -qxF 'export PATH=$PATH:/usr/local/go/bin' "$rcfile" 2>/dev/null; then
+        	printf '%s\n' 'export PATH=$PATH:/usr/local/go/bin' >> "$rcfile"
+    	fi
+
+    	if ! grep -qxF 'export PATH=$PATH:$HOME/go/bin' "$rcfile" 2>/dev/null; then
+        	printf '%s\n' 'export PATH=$PATH:$HOME/go/bin' >> "$rcfile"
+    	fi
+	
+	
+	export PATH=/usr/local/go/bin:$PATH
+    	export PATH=$HOME/go/bin:$PATH
+	if ! command -v go &> /dev/null; then
+		echo "'go' installation failed! Please install (go) manually"
+		exit 1
+	fi
+}
+###############################// End Install Fcuntions //###############################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+############################### Check installed and uninstalled required tools ###############################
+uninstalled_tools=()
+installed_tools=()
+go_path="$HOME/go/bin"
+export PATH=$PATH:$go_path
+
+
+
+function check_tools(){
+	for tool in "${TOOLS[@]}"; do
+		
+	    # check if SecLists does exist!
+	    if [[ "$tool" = "SecLists" ]]; then
+	    	if [[ ! -e ~/SecLists ]]; then
+	    		uninstalled_tools+=("$tool")
+	    		continue
+	    	else
+	    		installed_tools+=("$tool")
+	    		continue
+	    	fi
+	    fi
+	    
+	    
+	    
+	    
+	    
+	    
+	    
+	    # check if httpx is installed from 'go' not 'apt' (lastest version)
+	    # ----------------------------------------------------
+	    if [[ "$tool" = "httpx" ]]; then
+		if command -v httpx &> /dev/null && [[ ! -f "$go_path/httpx" ]]; then
+
+		    sudo rm -f /usr/bin/httpx
+		    if command -v apt &> /dev/null; then
+		        sudo apt remove httpx -y
+		    elif command -v dnf &> /dev/null; then
+		        sudo dnf remove httpx -y
+		    elif command -v pacman &> /dev/null; then
+		        sudo pacman -Rs --noconfirm httpx
+		    elif command -v yum &> /dev/null; then
+		        sudo yum remove httpx -y
+		    fi
+		fi
+	    fi
+	    
+	    
+	    
+	    
+	    
+	    
+	    # Check aother tools
+	    # ----------------------------------------------------
+	    
+	    if ! command -v "$tool" &> /dev/null; then
+		uninstalled_tools+=("$tool")
+	    else
+	    	installed_tools+=("$tool")
+	    fi
+	    
+	done
+	
+	
+	if [[ "${#uninstalled_tools[@]}" > 0 ]]; then
+		return 0
+	else
+	    	return 1
+	fi
+
+}
+
+
+
+
+
+
+
+
+
+
+############################### Functions to deal with installed/uninstalled tools ###############################
+# like install - display tools 
+
+
+function show_tools(){
+	check_tools
+	echo -e "The tools:"
+	for tool in "${TOOLS[@]}"; do
+		check=0
+		for untool in "${uninstalled_tools[@]}"; do
+			if [[ "$tool" = "$untool" ]]; then
+				echo -e "\e[31m[!] - ($tool) [uninstalled]\e[0m"
+				check=1
+				break
+			fi
+		done
+		if [ "$check" -eq 0 ]; then
+			echo -e "\e[32m[*] - ($tool) [installed]\e[0m"
+		fi
+	done
+		
+}
+
+
+
+
+function display_installed_tools(){
+	echo -e "\e[32m--------- All Tools Are Exist! ---------\e[0m"
+	for tool in "${installed_tools[@]}"; do
+		echo -e "\e[32m[*] - $tool\e[0m"
+	done
+	printf "\n\n"
+}
+
+
+function display_uninstalled_tools(){
+	echo -e "\e[32m--------- Tools That don't exist! ---------\e[0m"
+	for tool in "${uninstalled_tools[@]}"; do
+		echo -e "\e[31m[!] - $tool\e[0m"
+	done
+	printf "\n\n"
+	echo -e "\e[33mTo install all required tools > use '-install' flag!\e[0m"
+	printf "\n\n"
+}
+
+
+function display_exist_tools(){
+	echo -e "\e[32m--------- All Tools Are Exist! ---------\e[0m"
+	for tool in "${TOOLS[@]}"; do
+		echo -e "\e[32m[*] - $tool\e[0m"
+	done
+	printf "\n\n"
+}
+
+function install_tools(){
+	check_tools
+	if (( "${#uninstalled_tools[@]}" > 0 )); then
+		display_uninstalled_tools
+	
+	
+		# updateing the package manager
+		update_pk
+	
+	
+		# Start installing required tools
+		for tool in "${uninstalled_tools[@]}"; do
+			case "$tool" in
+					python3)
+						install_python3
+						;;
+				
+					curl)
+						install_curl
+						;;
+				
+					wget)
+						install_wget
+						;;
+					
+					git)
+						install_git
+						;;
+					
+					go)
+						install_go
+						;;
+						
+					SecLists)
+						install_seclists
+						;;
+				
+					jq)
+						install_jq
+						;;
+					
+					sublist3r_v2)
+						install_sublist3r_v2
+						;;
+					
+					
+					amass)
+						install_amass
+						;;
+					
+					
+					
+					assetfinder)
+						install_assetfinder
+						;;
+					
+					
+				
+					subfinder)
+						install_subfinder
+						;;
+					
+				
+					gobuster)
+						install_gobuster
+						;;
+					
+					
+					gau)
+						install_gau
+						;;
+					
+					
+					katana)
+						install_katana
+						;;
+					
+					
+					dirsearch)
+						install_dirsearch
+						;;
+				
+				
+					waymore)
+						install_waymore
+						;;
+				
+					httpx)
+						install_httpx
+						;;
+
+					
+				esac
+		done
+	
+	
+
+		echo -e "\e[32m- All tools have been installed! -\e[0m"
+	
+
+	else
+		display_exist_tools
+
+	fi
+}
+

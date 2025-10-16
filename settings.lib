@@ -1,0 +1,166 @@
+#!/bin/bash
+
+# This file handles the settings for the tools used by the script. Based on the mode selection
+
+
+
+WORDLIST_SUBDOMAINS=~/SecLists/Discovery/DNS/subdomains-top1million-5000.txt
+WORDLIST_DIRS=~/SecLists/Discovery/Web-Content/common.txt
+
+
+
+
+# MODE ---> -safe or -medium or -aggressive  (-safe as default)
+MODE="-safe"
+args=("$@")  # copy args
+
+for idx in "${!args[@]}"; do
+    val="${args[idx]}"
+    if [[ "$val" =~ ^-(safe|medium|aggressive)$ || "$val" =~ ^--(safe|medium|aggressive)$ ]]; then
+        MODE="$val"
+        unset 'args[idx]'    # remove that element
+
+        set -- "${args[@]}"  # restore orignal params again
+        break
+
+    fi
+done
+
+
+
+
+
+# Default Mode (-safe)
+THREADS=20
+AMASS_TIMEOUT=10 # For amass Tool Minuts To Finish The Enumeration
+AMASS_DNS_QPS=13 # For amass-active Tool scan (-dns-qps - DNS Query Per Second)
+AMASS_TRQPS=8 # For amass-active scan Tool (-trqps - Trusted Resolver Query Per Second)
+AMASS_RQPS=4  # For amass-active scan Tool (-rqps - Resolver Query Per Second)
+SUBFINDER_TIMEOUT=15 # For subfinder Tool Per Request wating In Seconds
+SUBFINDER_MAX_TIME=10 # For subfinder Tool Minuts To Finish The Enumeration
+GOBUSTER_TIMEOUT=15s # For gobuster Tool Seconds Per DNS Resolver Query
+GOBUSTER_DELAY=1000ms # For gobuster Tool Milli-Seconds For Delay The Request
+HTTPX_TIMEOUT=15 # For httpx Tool Seconds For Each Request
+HTTPX_DELAY=1000ms # For httpx Tool Milli-Seconds For Delay The Request
+
+
+DIRSEARCH_THREADS=5
+FFUF_THREADS=10
+FFUF_TIMEOUT=10
+FFUF_RATE=2
+
+KATANA_CONCURRENCY=2
+KATANA_RATE_LIMIT=1
+KATANA_DEPTH=3
+KATANA_TIMEOUT=15
+
+WAYMORE_PROCESSES=1
+WAYMORE_TIMEOUT=30
+WAYMORE_RETRIES=1
+
+
+case "$MODE" in
+
+	  -medium|--medium)
+            THREADS=50
+            AMASS_TIMEOUT=25
+            AMASS_DNS_QPS=20
+            AMASS_TRQPS=15
+            AMASS_RQPS=7
+            SUBFINDER_TIMEOUT=10
+            SUBFINDER_MAX_TIME=25
+            GOBUSTER_TIMEOUT=10s
+            GOBUSTER_DELAY=500ms
+            HTTPX_TIMEOUT=10
+            HTTPX_DELAY=500ms
+            WORDLIST_DIRS=~/SecLists/Discovery/Web-Content/big.txt
+            DIRSEARCH_THREADS=15
+            FFUF_THREADS=45
+            FFUF_TIMEOUT=5
+            FFUF_RATE=20
+            KATANA_CONCURRENCY=10
+	    KATANA_RATE_LIMIT=5
+	    KATANA_DEPTH=5
+	    KATANA_TIMEOUT=7
+	    WAYMORE_PROCESSES=3
+	    WAYMORE_TIMEOUT=15
+	    WAYMORE_RETRIES=3
+            ;;
+
+
+
+	  -aggressive|--aggressive)
+            THREADS=200
+            AMASS_TIMEOUT=50
+            AMASS_DNS_QPS=30
+            AMASS_TRQPS=15
+            AMASS_RQPS=10
+            SUBFINDER_TIMEOUT=5
+            SUBFINDER_MAX_TIME=50
+            GOBUSTER_TIMEOUT=5s
+            GOBUSTER_DELAY=200ms
+            HTTPX_TIMEOUT=5
+            HTTPX_DELAY=200ms
+            WORDLIST_DIRS=~/SecLists/Discovery/Web-Content/raft-medium-directories.txt
+            DIRSEARCH_THREADS=50
+            FFUF_THREADS=130
+            FFUF_TIMEOUT=3
+            FFUF_RATE=200
+            KATANA_CONCURRENCY=2
+	    KATANA_RATE_LIMIT=1
+	    KATANA_DEPTH=3
+	    KATANA_TIMEOUT=5
+	    WAYMORE_PROCESSES=5
+	    WAYMORE_TIMEOUT=5
+	    WAYMORE_RETRIES=5
+            ;;
+
+            
+esac
+
+
+
+function re_settings(){
+	# This function will re settings to more safe if there is possible cloud providor
+
+
+	if [[ "$MODE" = "-aggressive" || "$MODE" = "-medium" || "$MODE" = "--aggressive" || "$MODE" = "--medium" ]]; then
+		
+		
+		# Ask user if he wants to re settings or complete with his own mode
+		answer=""
+		while read -r -p "Do you want to make 'mode' Low-Medium	(Y/n): " answer; do
+			if [[ "$answer" = "y" || "$answer" = "Y" || "$answer" = "N" || "$answer" = "n" ]]; then
+				break
+			fi
+		done
+		
+		# if 'y' make it low-medium
+		if [[ "$answer" = "y" || "$answer" = "Y" ]]; then
+			MODE="Low Medium"
+			THREADS=30
+		    	AMASS_TIMEOUT=20
+			AMASS_DNS_QPS=15
+			AMASS_TRQPS=10
+			AMASS_RQPS=5
+			SUBFINDER_TIMEOUT=10
+			SUBFINDER_MAX_TIME=15
+			GOBUSTER_TIMEOUT=10s
+			GOBUSTER_DELAY=1000ms
+			HTTPX_TIMEOUT=8
+			HTTPX_DELAY=700ms
+			WORDLIST_DIRS=~/SecLists/Discovery/Web-Content/common.txt
+			DIRSEARCH_THREADS=10
+			FFUF_THREADS=30
+			FFUF_TIMEOUT=5
+			FFUF_RATE=10
+			KATANA_CONCURRENCY=6
+			KATANA_RATE_LIMIT=4
+			KATANA_DEPTH=5
+			KATANA_TIMEOUT=5
+			WAYMORE_PROCESSES=4
+			WAYMORE_TIMEOUT=15
+			WAYMORE_RETRIES=4
+		fi
+	fi
+}

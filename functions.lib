@@ -1,0 +1,177 @@
+#!/bin/bash
+# This file has genral functions
+
+# remove_tld --> to make target.com --> target
+# remove_http ---> to remove http protocol from the link! https://example.com --> example.com
+# print_status ---> to print some information about the current recon
+# creating_dirs ---> to create dirs for save results
+
+
+
+
+function remove_tld(){
+	tlds=("com" "net" "org" "tv" "io" "info" "au" "fr" "us" "su" "ps" "jo" "ca" "gov" "dev" "tech" "edu" "ai" "me" "app" "co" "biz" "mil")
+	
+	for i in "${tlds[@]}"; do
+		if [[ "${DOMAIN%.$i}" != "$DOMAIN" ]]; then
+			echo "${DOMAIN%.$i}"
+			return 0
+		fi
+	done
+	echo -e "\e[31mError: In reomve the TLD\e[0m"
+	exit 1
+}
+
+
+
+function remove_http(){
+	new=$(echo "$URL" | sed -E 's~https?://~~' | sed -E 's~/$~~')
+	echo "$new"
+}
+
+
+
+
+function print_status() {
+
+	if [[ "$MAIN_ACTION" = "subs" ]]; then
+		echo -e "\n\n\n"
+		echo -e "\e[33mSubdomains Enumeration\e[0m"
+		echo "##################### INFO #####################"
+		echo -e "\e[36mEnumeration For:\e[0m \e[31m$DOMAIN\e[0m"
+	else
+		echo -e "\n\n\n"
+		echo -e "\e[33mUrls Enumeration\e[0m"
+		echo "##################### INFO #####################"
+		echo -e "\e[36mUrls Enumeration for:\e[0m \e[31m$URL\e[0m"
+	fi
+	
+	mode=$(echo "$MODE" | sed 's/-//')
+	echo -e "\e[36mScan Mode:\e[0m \e[31m$mode\e[0m"
+	echo -e "\e[36mDate:\e[0m \e[31m$(date)\e[0m"
+	echo -e "\e[36mAuthor:\e[0m \e[31mWaleed Ibrahim\e[0m"
+	echo -e "\e[36mVersion:\e[0m \e[31m1.0.0\e[0m"
+	
+	echo -e "################################################\n\n\n"
+}
+
+
+
+
+
+
+
+function help_message(){
+	echo "Usage:"
+	echo "	dax-w [flags]"
+	echo -e "\n\n"
+	
+	
+	echo "Flags:"
+	echo "	-h | -help   Show this help message."
+	echo "	-show-tools   Show installed tools and those that need to be installed."
+	echo "	-install   Install all tools that need to be exist!"
+	echo "	-safe   Safe mode for enumeration."
+	echo "	-medium   Medium mode for enumeration."
+	echo "	-aggressive   Aggressive mode for enumeration."
+	echo -e "\n\n"
+	
+	
+	echo "For 'subs':"
+	echo "	-d string   Domain to find subdomains for."
+	echo "	-m string[]   Use 2 or more domains to find subdomains."
+	echo "	-l string   Path to a list of domains to find subdomains for."
+	echo "	-n string   Name of the Dir that you want to save files and reports in."
+	echo "	-t strings[]   select tools for subdomains enumeration (sublist3r-passive -- sublist3r-active -- amass-passive -- amass-active -- subfinder -- assetfinder -- gobuster -- crt)"
+	echo -e "\n\n"
+	
+	
+	echo "For 'urls':"
+	echo "	-u string   Url of a domain to find links for"
+	echo "	-m string[]   Use 2 or more domain URLs to find links."
+	echo "	-l string   Path to a list of domains to find subdomains for."
+	echo "	-n string   Name of the Dir that you want to save files and reports in."
+	echo "	-t strings[]   select tools for links enumeration (gau -- dirsearch -- katana -- ffuf -- waymore)"
+}
+
+
+
+
+
+
+
+function creating_dirs(){
+	echo -e "\e[35m\n\n\nCreating directories for '$DOMAIN'\e[0m"
+	MAIN_DIR=""
+	TXTS_DIR=""
+	REPORTS_DIR=""
+
+	
+	# check if the user chooses a specific name from -n
+	if [[ -n "$SPECIFIC_NAME_DIR" ]]; then
+		MAIN_DIR="${SPECIFIC_NAME_DIR}"
+	else
+		if [[ "$MAIN_ACTION" = "subs" ]]; then
+			MAIN_DIR="${DOMAIN}_subdomains"
+		else
+			MAIN_DIR="${DOMAIN}_links"
+		fi
+	fi	
+	
+	
+	# check if the name of dir is exist!
+	if [[ -e  "$MAIN_DIR" ]]; then
+		NEW_NAME_DIR=""
+		while read -r  -p "The folder ($MAIN_DIR) already exists. Choose a new name: " NEW_NAME_DIR; do
+			if [[ ! -e "${NEW_NAME_DIR}" ]]; then
+				break
+			fi
+		done
+		MAIN_DIR="${NEW_NAME_DIR}"
+	fi
+	
+	TXTS_DIR="${MAIN_DIR}/txts"
+	REPORTS_DIR="${MAIN_DIR}/reports"
+	
+	mkdir -p "${TXTS_DIR}"  # Make DIR for txt outputs
+	mkdir -p "${REPORTS_DIR}"  # Make DIR for html reports 
+	
+}
+
+
+
+
+
+
+
+
+function check_size_user_tools(){
+	# Check if the number of tools that user select is greater than allowed tools! 
+	if (( "${#TOOLS_OPT[@]}" > "${#ALLOWED_TOOLS[@]}" )); then
+		echo -e "\e[31mError: \e[0mThe number of tools you select is greater than the number of tools available. Use -h to know allowed tools in subs with -t !"
+		exit 1
+	fi
+}
+
+
+
+
+
+
+
+function is_input_tools_valid(){
+	# Check if the user wrote the tools right
+	for input_tool in "${TOOLS_OPT[@]}"; do
+		found=0
+		for main_tool in "${ALLOWED_TOOLS[@]}"; do
+			if [[ "$input_tool" = "$main_tool" ]]; then
+				found=1
+				break
+			fi
+		done
+		if (( "$found" == 0 )); then
+			echo -e "\e[31mError: \e[0mThe tool you select \e[31m($input_tool)\e[0m does not exist or you write it wrong!. Use \e[31m-h\e[0m to know allowed tools in subs with \e[31m-t\e[0m !"
+			exit 1
+		fi
+	done 
+}

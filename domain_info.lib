@@ -1,0 +1,87 @@
+#!/bin/bash
+# This file deal with anaylizing the domain (whois, dig NS, reverse whois, CNAME, etc...)
+# trys to find a possible cloud providor like (CloudFlare, Amazoon, etc..) to make re-setting the tools options
+
+
+
+
+function analyze_domain(){
+	echo -e "\e[32mStarting analyze the domain...\e[0m"
+	# Extract name server
+	echo -e "\e[32mFetching the name server...\e[0m"
+	name_server=$(dig NS "$DOMAIN" +short | sed 's/$/ /')
+	if [[ -z "$name_server" ]]; then
+		"$name_server"="None"
+	fi
+
+	
+	
+	
+	
+	# Extract (CNAME) Canonical Name Record
+	echo -e "\e[32mFetching canonical name record...\e[0m"
+	cname=$(dig CNAME "$DOMAIN" +short | sed 's/$/ /')
+	if [[ -z "$cname" ]]; then
+		cname="None"
+	fi
+
+
+	
+	
+	# Extract First IP
+	echo -e "\e[32mFetching first IP...\e[0m"
+	ip=$(dig "$DOMAIN" +short | head -n1)
+	if [[ -z "$ip" ]]; then
+		ip="None"
+	fi
+
+	
+
+	
+	
+	
+	
+
+	# 'whois' on the IP if exists
+	echo -e "\e[32mStarting Reverse 'whois' on the IP...\e[0m"
+	if [[ "$ip" != "None" ]]; then
+		whois_ip=$(whois "$ip" | awk '/OrgName|org-name|NetName|NetHandle|descr|owner|country|network/ {print}')
+		
+		# is the IP real ? 
+		real_ip=$(curl -s -H "Host: $DOMAIN" http://"$ip" 2> /dev/null | head -n 50)
+
+
+		if echo "$real_ip" | grep -i "<html" &> /dev/null; then
+			real_ip="$ip"
+		
+		else
+			real_ip="None"
+		fi
+	fi
+	
+	
+	
+	
+	
+	
+	# Check if there is possible cloud provider
+	cloud_providor=$(echo "$name_server" "$cname" "$whois_ip" | grep -E -i "(Cloudflare|Akamai|Akam|Fastly|Amazon CloudFront|StackPath|Imperva|Incapsula|AWS)")
+	if [[ -z "$cloud_providor" ]]; then
+		cloud_providor="None"
+	fi
+
+	
+	
+	
+			
+	# if there is possible cloud providor >>> make the settings Low-Medium if the mode is medium or aggressive
+	if [[ "$cloud_providor" != "None" ]]; then
+		echo -e "\e[31mWarning: \e[0m\e[33mThere is a possible cloud providor! the tool will re-setting the mode!\e[0m"
+		re_settings
+	fi
+	
+	
+	domain_final_report
+
+}
+

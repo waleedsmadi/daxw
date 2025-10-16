@@ -1,0 +1,340 @@
+#!/bin/bash
+
+# This file has functions to create final report in html 
+
+
+source "${CURRENT_DIR}/functions.lib"
+
+
+
+
+
+# For subdomain enumeration results  (.html)
+function subs_report() {
+	echo -e "\e[35mCreating final_report.html...\e[0m"
+	
+	DATE=$(date)
+
+
+cat<<EOF > "${REPORTS_DIR}/final_report.html"
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>"$DOMAIN subdomains"</title>
+</head>
+
+<body style='background-color: #181818; padding: 15px'>
+<h1 style='color: #e91e63; text-align: center;'>${DOMAIN} report has been created at $DATE</h1>
+<br><br><br><br>
+EOF
+
+
+
+
+
+	# for valid [200] subdomains
+	echo "<h2 style='color: #11D8E8;'>$DOMAIN valid <span style='color: red;'>200</span> status code subdomains:</h2>" >> "${REPORTS_DIR}/final_report.html"
+	if [[ -e "${TXTS_DIR}/subdomains_200" ]]; then
+		echo "<pre>" >> "${REPORTS_DIR}/final_report.html"
+		while read -r line || [[ -n "$line" ]]; do
+			echo "<a href='${line}' style='color: white;' target='_blank'>${line}</a>" >> "${REPORTS_DIR}/final_report.html"
+		done < "${TXTS_DIR}/subdomains_200"
+		echo "</pre>" >> "${REPORTS_DIR}/final_report.html"
+		echo "<br><br><br>" >> "${REPORTS_DIR}/final_report.html"
+	else
+		echo "<pre style='color: red;'>No Results!</pre>" >> "${REPORTS_DIR}/final_report.html"
+		echo "<br><br><br>" >> "${REPORTS_DIR}/final_report.html"
+	fi
+	
+	
+	
+
+
+	# for all subdomains
+	echo "<h2 style='color: #11D8E8;'>$DOMAIN all subdomains:</h2>" >> "${REPORTS_DIR}/final_report.html"
+	if [[ -e "${TXTS_DIR}/subdomains" ]]; then
+		echo "<pre>" >> "${REPORTS_DIR}/final_report.html"
+		while read -r line || [[ -n "$line" ]]; do
+			echo "<a href='https://${line}' style='color: white;' target='_blank'>${line}</a>" >> "${REPORTS_DIR}/final_report.html"
+		done < "${TXTS_DIR}/subdomains"
+		echo "</pre>" >> "${REPORTS_DIR}/final_report.html"
+		echo "<br><br><br>" >> "${REPORTS_DIR}/final_report.html"
+	else
+		echo "<pre style='color: red;'>No Results!</pre>" >> "${REPORTS_DIR}/final_report.html"
+		echo "<br><br><br>" >> "${REPORTS_DIR}/final_report.html"
+	fi
+	
+	echo "</body></html>" >> "${REPORTS_DIR}/final_report.html"
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# For links enumeration results  (.html)
+function links_report(){
+	echo -e "\e[35mCreating final_report.html...\e[0m"
+	local DATE=$(date)
+	
+
+# Make the html structrue
+cat<<EOF > "${REPORTS_DIR}/final_report.html"
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>"$DOMAIN links"</title>
+</head>
+<body style='background-color: #181818; padding: 15px'>
+<div style='position: fixed; top: 0; left: 0; width: 100%; padding:0; margin: 0; background: white; box-shadow: 0 2px 10px rgb(255 255 255 / 56%); z-index: 9999;background-color: #181818;'>
+<h1 style='color: #e91e63; text-align: center; margin-top: 0px; '>harmash.com report has been created at Sun Oct  5 10:44:34 PM +03 2025</h1>
+<ul style="list-style: none; display: flex; justify-content: space-evenly; ">
+<li><a style="text-decoration-line: none; color: white" href="#200_params">200 with params</a></li>
+<li><a style="text-decoration-line: none; color: white" href="#200_no_params">200 without params</a></li>
+<li><a style="text-decoration-line: none; color: white" href="#301">301</a></li>
+<li><a style="text-decoration-line: none; color: white" href="#302">302</a></li>
+<li><a style="text-decoration-line: none; color: white" href="#403">403</a></li>
+<li><a style="text-decoration-line: none; color: white" href="#405">405</a></li>
+<li><a style="text-decoration-line: none; color: white" href="#js">js</a></li>
+<li><a style="text-decoration-line: none; color: white" href="#http-methods">http method responses</a></li>
+</ul>
+</div>
+<br><br><br><br>
+EOF
+
+
+
+	# for 200 status code with paramas
+	echo "<h2 id='200_params' style='color: #11D8E8; scroll-margin-top: 150px;'>${DOMAIN} urls <span style='color: red;'>200</span> status code <span style='color: red;'>with params:</span></h2>" >> "${REPORTS_DIR}/final_report.html"
+	if [[ -e "${TXTS_DIR}/200_params.txt" && -s "${TXTS_DIR}/200_params.txt" ]]; then
+		echo "<pre>" >> "${REPORTS_DIR}/final_report.html"
+		while IFS= read -r line || [[ -n "$line" ]]; do
+			echo "<a href='$line' target='_blank' style='font-size: 14px; color: white;'>$line</a> <span style='font-size: 15px; color: white;'>[[200 params]]</span> <br>" >> "${REPORTS_DIR}/final_report.html"
+		done<"${TXTS_DIR}/200_params.txt"
+		echo "</pre>" >> "${REPORTS_DIR}/final_report.html"
+		echo "<br><br><br>" >> "${REPORTS_DIR}/final_report.html"
+	else
+		echo "<pre style='color: red;'>No Results!</pre>" >> "${REPORTS_DIR}/final_report.html"
+		echo "<br><br><br>" >> "${REPORTS_DIR}/final_report.html"
+	fi
+	
+	
+	
+	# for 200 status code without paramas
+	echo "<h2 id='200_no_params' style='color: #11D8E8; scroll-margin-top: 150px;'>${DOMAIN} urls <span style='color: red;'>200</span> status code <span style='color: red;'>without params:</span></h2>" >> "${REPORTS_DIR}/final_report.html"
+	if [[ -e "${TXTS_DIR}/200_no_params.txt" && -s "${TXTS_DIR}/200_no_params.txt" ]]; then
+		echo "<pre>" >> "${REPORTS_DIR}/final_report.html"
+		while IFS= read -r line || [[ -n "$line" ]]; do
+			echo "<a href='$line' target='_blank' style='font-size: 14px; color: white;'>$line</a> <span style='font-size: 15px; color: white;'>[[200 no params]]</span> <br>" >> "${REPORTS_DIR}/final_report.html"
+		done<"${TXTS_DIR}/200_no_params.txt"
+		echo "</pre>" >> "${REPORTS_DIR}/final_report.html"
+		echo "<br><br><br>" >> "${REPORTS_DIR}/final_report.html"
+	else
+		echo "<pre style='color: red;'>No Results!</pre>" >> "${REPORTS_DIR}/final_report.html"
+		echo "<br><br><br>" >> "${REPORTS_DIR}/final_report.html"
+	fi
+	
+	
+	
+	
+	# for 301 status code
+	echo "<h2 id='301' style='color: #11D8E8; scroll-margin-top: 150px;'>${DOMAIN} urls <span style='color: red;'>301</span> status code:</h2>" >> "${REPORTS_DIR}/final_report.html"
+	if [[ -e "${TXTS_DIR}/301.txt" && -s "${TXTS_DIR}/301.txt" ]]; then
+		echo "<pre>" >> "${REPORTS_DIR}/final_report.html"
+		while IFS= read -r line || [[ -n "$line" ]]; do
+			echo "<a href='$line' target='_blank' style='font-size: 14px; color: white;'>$line</a> <span style='font-size: 15px; color: white;'>[[301]]</span> <br>" >> "${REPORTS_DIR}/final_report.html"
+		done<"${TXTS_DIR}/301.txt"
+		echo "</pre>" >> "${REPORTS_DIR}/final_report.html"
+		echo "<br><br><br>" >> "${REPORTS_DIR}/final_report.html"
+	else
+		echo "<pre style='color: red;'>No Results!</pre>" >> "${REPORTS_DIR}/final_report.html"
+		echo "<br><br><br>" >> "${REPORTS_DIR}/final_report.html"
+	fi
+	
+	
+	
+	# for 302 status code
+	echo "<h2 id='302' style='color: #11D8E8; scroll-margin-top: 150px;'>${DOMAIN} urls <span style='color: red;'>302</span> status code:</h2>" >> "${REPORTS_DIR}/final_report.html"
+	if [[ -e "${TXTS_DIR}/302.txt" && -s "${TXTS_DIR}/302.txt" ]]; then
+		echo "<pre>" >> "${REPORTS_DIR}/final_report.html"
+		while IFS= read -r line || [[ -n "$line" ]]; do
+			echo "<a href='$line' target='_blank' style='font-size: 14px; color: white;'>$line</a> <span style='font-size: 15px; color: white;'>[[302]]</span> <br>" >> "${REPORTS_DIR}/final_report.html"
+		done<"${TXTS_DIR}/302.txt"
+		echo "</pre>" >> "${REPORTS_DIR}/final_report.html"
+		echo "<br><br><br>" >> "${REPORTS_DIR}/final_report.html"
+	else
+		echo "<pre style='color: red;'>No Results!</pre>" >> "${REPORTS_DIR}/final_report.html"
+		echo "<br><br><br>" >> "${REPORTS_DIR}/final_report.html"
+	fi
+	
+	
+	# for 403 status code
+	echo "<h2 id='403' style='color: #11D8E8; scroll-margin-top: 150px;'>${DOMAIN} urls <span style='color: red;'>403</span> status code:</h2>" >> "${REPORTS_DIR}/final_report.html"
+	if [[ -e "${TXTS_DIR}/403.txt" && -s "${TXTS_DIR}/403.txt" ]]; then
+		echo "<pre>" >> "${REPORTS_DIR}/final_report.html"
+		while IFS= read -r line || [[ -n "$line" ]]; do
+			echo "<a href='$line' target='_blank' style='font-size: 14px; color: white;'>$line</a> <span style='font-size: 15px; color: white;'>[[403]]</span> <br>" >> "${REPORTS_DIR}/final_report.html"
+		done<"${TXTS_DIR}/403.txt"
+		echo "</pre>" >> "${REPORTS_DIR}/final_report.html"
+		echo "<br><br><br>" >> "${REPORTS_DIR}/final_report.html"
+	else
+		echo "<pre style='color: red;'>No Results!</pre>" >> "${REPORTS_DIR}/final_report.html"
+		echo "<br><br><br>" >> "${REPORTS_DIR}/final_report.html"
+	fi
+	
+	
+	
+	# for 405 status code
+	echo "<h2 id='405' style='color: #11D8E8; scroll-margin-top: 150px;'>${DOMAIN} urls <span style='color: red;'>405</span> status code:</h2>" >> "${REPORTS_DIR}/final_report.html"
+	if [[ -e "${TXTS_DIR}/405.txt" && -s "${TXTS_DIR}/405.txt" ]]; then
+		echo "<pre>" >> "${REPORTS_DIR}/final_report.html"
+		while IFS= read -r line || [[ -n "$line" ]]; do
+			echo "<a href='$line' target='_blank' style='font-size: 14px; color: white;'>$line</a> <span style='font-size: 15px; color: white;'>[[405]]</span> <br>" >> "${REPORTS_DIR}/final_report.html"
+		done<"${TXTS_DIR}/405.txt"
+		echo "</pre>" >> "${REPORTS_DIR}/final_report.html"
+		echo "<br><br><br>" >> "${REPORTS_DIR}/final_report.html"
+	else
+		echo "<pre style='color: red;'>No Results!</pre>" >> "${REPORTS_DIR}/final_report.html"
+		echo "<br><br><br>" >> "${REPORTS_DIR}/final_report.html"
+	fi
+	
+	
+
+
+
+
+
+	# for js files
+	echo "<h2 id='js' style='color: #11D8E8; scroll-margin-top: 150px;'>${DOMAIN} JavaScript files:</h2>" >> "${REPORTS_DIR}/final_report.html"
+	if [[ -e "${TXTS_DIR}/js.txt" && -s "${TXTS_DIR}/js.txt" ]]; then
+		echo "<pre>" >> "${REPORTS_DIR}/final_report.html"
+		while IFS= read -r line || [[ -n "$line" ]]; do
+			echo "<a href='$line' target='_blank' style='font-size: 14px; color: white;'>$line</a> <br>" >> "${REPORTS_DIR}/final_report.html"
+		done<"${TXTS_DIR}/js.txt"
+		echo "</pre>" >> "${REPORTS_DIR}/final_report.html"
+		echo "<br><br><br>" >> "${REPORTS_DIR}/final_report.html"
+	else
+		echo "<pre style='color: red;'>No Results!</pre>" >> "${REPORTS_DIR}/final_report.html"
+		echo "<br><br><br>" >> "${REPORTS_DIR}/final_report.html"
+	fi
+	
+	
+	
+	
+	
+	
+	
+	
+	# for https methods responses
+	echo "<h2 id='http-methods' style='color: #11D8E8; scroll-margin-top: 150px;'>${DOMAIN} http methods:</h2>" >> "${REPORTS_DIR}/final_report.html"
+	if [[ -e "${TXTS_DIR}/http_methods.txt" && -s "${TXTS_DIR}/http_methods.txt" ]]; then
+
+	
+		while IFS= read -r line || [[ -n "$line" ]]; do
+			echo "<pre style='font-size: 14px; color: white;'>$line</pre><br>" >> "${REPORTS_DIR}/final_report.html"
+		done<"${TXTS_DIR}/http_methods.txt"
+		
+		echo "<br><br><br>" >> "${REPORTS_DIR}/final_report.html"
+	else
+		echo "<pre style='color: red;'>No Results!</pre>" >> "${REPORTS_DIR}/final_report.html"
+		echo "<br><br><br>" >> "${REPORTS_DIR}/final_report.html"
+	fi
+	
+	echo "</body></html>" >> "${REPORTS_DIR}/final_report.html"
+}
+
+
+
+
+
+
+
+
+
+
+
+
+# For analyizing domain results  (.html)
+function domain_final_report(){
+	echo -e "\e[35mCreating domain_report.html...\e[0m"
+	DATE=$(date)
+	
+	
+# Make html structrue
+cat<<EOF > "${REPORTS_DIR}/domain_report.html"
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>"$DOMAIN domain info"</title>
+</head>
+<body style='background-color: #181818; padding: 15px'>
+<h1 style='color: #e91e63; text-align: center;'>${DOMAIN} report has been created at $DATE</h1>
+<br><br><br><br>
+EOF
+
+
+	# Display Name Server
+	echo "<h2 style='color: #11D8E8;'>Name Server:</h2>" >> "${REPORTS_DIR}/domain_report.html"
+	echo "<pre style='color: white;'>$name_server</pre>" >> "${REPORTS_DIR}/domain_report.html"
+	echo "<hr>" >> "${REPORTS_DIR}/domain_report.html"
+	echo "<br><br><br><br>" >> "${REPORTS_DIR}/domain_report.html"
+	
+	
+	
+	# Display Cname
+	echo "<h2 style='color: #11D8E8;'>(CNAME) Canonical Name Record:</h2>" >> "${REPORTS_DIR}/domain_report.html"
+	echo "<pre style='color: white;'>$cname</pre>" >> "${REPORTS_DIR}/domain_report.html"
+	echo "<hr>" >> "${REPORTS_DIR}/domain_report.html"
+	echo "<br><br><br><br>" >> "${REPORTS_DIR}/domain_report.html"
+	
+	
+	
+	# Display First IP
+	echo "<h2 style='color: #11D8E8;'>IP Address:</h2>" >> "${REPORTS_DIR}/domain_report.html"
+	echo "<pre style='color: white';>$ip</pre>" >> "${REPORTS_DIR}/domain_report.html"
+	echo "<hr>" >> "${REPORTS_DIR}/domain_report.html"
+	echo "<br><br><br><br>" >> "${REPORTS_DIR}/domain_report.html"
+	
+	
+	# Display Real IP
+	echo "<h2 style='color: #11D8E8;'>Real IP Address:</h2>" >> "${REPORTS_DIR}/domain_report.html"
+	echo "<pre style='color: white;'>$real_ip</pre>" >> "${REPORTS_DIR}/domain_report.html"
+	echo "<hr>" >> "${REPORTS_DIR}/domain_report.html"
+	echo "<br><br><br><br>" >> "${REPORTS_DIR}/domain_report.html"
+	
+		
+	
+	# Display Reverse Whois On The IP
+	echo "<h2 style='color: #11D8E8;'>Reverse Whois:</h2>" >> "${REPORTS_DIR}/domain_report.html"
+	echo "<pre style='color: white;'>$whois_ip</pre>" >> "${REPORTS_DIR}/domain_report.html"
+	echo "<hr>" >> "${REPORTS_DIR}/domain_report.html"
+	echo "<br><br><br><br>" >> "${REPORTS_DIR}/domain_report.html"
+	
+		
+	
+	# Display Cloud Providor
+	echo "<h2 style='color: #11D8E8;'>Cloud Providor:</h2>" >> "${REPORTS_DIR}/domain_report.html"
+	echo "<pre style='color: white;'>$cloud_providor</pre>" >> "${REPORTS_DIR}/domain_report.html"
+	echo "<hr>" >> "${REPORTS_DIR}/domain_report.html"
+	echo "<br><br><br><br>" >> "${REPORTS_DIR}/domain_report.html"
+	
+	
+	
+	echo "</body></html>" >> "${REPORTS_DIR}/domain_report.html"	
+}

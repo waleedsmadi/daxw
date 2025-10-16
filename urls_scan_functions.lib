@@ -1,0 +1,373 @@
+#!/bin/bash
+
+# This file has links enumeration functions
+# after finish from each tool.. it collects all links to one file and picks just the 200,301,302,403,405 status code
+
+
+source "${CURRENT_DIR}/reports.lib"
+
+
+
+
+
+function gau_scan(){
+	echo -e "\e[32mFetching links by gau tool...(Don't Trun Off The Tool! It may take a long time.)\e[0m"
+	gau "$URL" | egrep -iv '\.(png|jpg|jpeg|gif|svg|css|woff2?|ttf|pdf)(\?|$)' | sort -u > "${TXTS_DIR}/gau.txt" 2> /dev/null
+	
+	
+	# Remove if the file is empty
+	if [[ -e "${TXTS_DIR}/gau.txt" ]]; then
+		if [[ ! -s "${TXTS_DIR}/gau.txt" ]]; then
+			rm -f "${TXTS_DIR}/gau.txt"
+		fi
+	fi
+}
+
+
+function katana_scan(){
+	echo -e "\e[32mFetching links by katana tool...(Don't Trun Off The Tool! It may take a long time.)\e[0m"
+	katana -u "$URL" -ob -or -c "$KATANA_CONCURRENCY" -rl "$KATANA_RATE_LIMIT" -d "$KATANA_DEPTH" -timeout "$KATANA_TIMEOUT" -j -o "${TXTS_DIR}/katana.json" 1> /dev/null 2>&1
+	if [[ -e "${TXTS_DIR}/katana.json" ]]; then
+		jq -r ".request.endpoint" "${TXTS_DIR}/katana.json" | sort -u > "${TXTS_DIR}/katana.txt"
+		rm -f "${TXTS_DIR}/katana.json"
+	fi
+	
+	
+	
+	# Remove if the file is empty
+	if [[ -e "${TXTS_DIR}/katana.txt" ]]; then
+		if [[ ! -s "${TXTS_DIR}/katana.txt" ]]; then
+			rm -f "${TXTS_DIR}/katana.txt"
+		fi
+	fi
+
+}
+
+
+function waymore_scan(){
+	echo -e "\e[32mFetching links by waymore tool...(Don't Trun Off The Tool! It may take a long time.)\e[0m"
+	waymore -i "$URL" -mode U -p "$WAYMORE_PROCESSES" -t "$WAYMORE_TIMEOUT" -r "$WAYMORE_RETRIES" -oU "${TXTS_DIR}/waymore.txt" > /dev/null 2>&1
+	
+	# Remove if the file is empty
+	if [[ -e "${TXTS_DIR}/waymore.txt" ]]; then
+		if [[ ! -s "${TXTS_DIR}/waymore.txt" ]]; then
+			rm -f "${TXTS_DIR}/waymore.txt"
+		fi
+	fi
+		
+}
+
+
+
+function dirsearch_scan(){
+	echo -e "\e[32mFetching links by dirsearch tool...(Don't Trun Off The Tool! It may take a long time.)\e[0m"
+	dirsearch -u "$URL" -t "$DIRSEARCH_THREADS" -w "$WORDLIST_DIRS" -i 200,301,302,403,405 -o "${TXTS_DIR}/dirsearch.json" -O json > /dev/null 2>&1
+	if [[ -e "${TXTS_DIR}/dirsearch.json" ]]; then
+		jq -r '.results[] | .url' "${TXTS_DIR}/dirsearch.json" > "${TXTS_DIR}/dirsearch.txt"
+		rm -f "${TXTS_DIR}/dirsearch.json"
+	fi
+	
+	
+	# Remove if the file is empty
+	if [[ -e "${TXTS_DIR}/dirsearch.txt" ]]; then
+		if [[ ! -s "${TXTS_DIR}/dirsearch.txt" ]]; then
+			rm -f "${TXTS_DIR}/dirsearch.txt"
+		fi
+	fi
+		
+}
+
+
+
+function ffuf_scan(){
+	echo -e "\e[32mFetching links by ffuf tool...(Don't Trun Off The Tool! It may take a long time.)\e[0m"
+	ffuf -u "${URL}/FUZZ" -w "$WORDLIST_DIRS" -t "$FFUF_THREADS" -timeout "$FFUF_TIMEOUT" -rate "$FFUF_RATE" -mc 200,301,302,403,405 -o "${TXTS_DIR}/ffuf.json" -of json > /dev/null 2>&1
+	if [[ -e "${TXTS_DIR}/ffuf.json" ]]; then
+		jq -r '.results[] | .url' "${TXTS_DIR}/ffuf.json" > "${TXTS_DIR}/ffuf.txt"
+		rm -f "${TXTS_DIR}/ffuf.json"
+	fi
+	
+	
+	# Remove if the file is empty
+	if [[ -e "${TXTS_DIR}/ffuf.txt" ]]; then
+		if [[ ! -s "${TXTS_DIR}/ffuf.txt" ]]; then
+			rm -f "${TXTS_DIR}/ffuf.txt"
+		fi
+	fi
+}
+
+
+
+
+
+
+
+
+
+
+# To clean links from similar links with paramas
+function clean_links(){
+	echo -e "\e[32mStarting link cleanup...\e[0m"
+	if [[ -e "${TXTS_DIR}/all_links.txt" && -s "${TXTS_DIR}/all_links.txt" ]]; then
+		
+		
+		# ---->  read from all_links.txt
+		cat "${TXTS_DIR}/all_links.txt" | \
+	    
+
+
+		sed -E 's/(\/)[0-9]+([?]?)$/\11\2/g' | \
+	    	# Match one or more digits at the end of the URL (optionally followed by ?) and replace them with 1, keeping the '/' and '?' if present
+
+
+
+		sed -E 's/([[:alnum:]_-]+_)[0-9]+/\11/g' | \
+		# Match one or more digits immediately after an underscore (_) in filenames or identifiers and replace them with 1
+
+
+		sed -E 's/(\/)[0-9]+\//\11\//g' | \
+		# Match one or more digits between slashes '/' in the path and replace them with 1, keeping the surrounding slashes
+
+
+		sed -E 's/([?&][^=]+=)([0-9\.]+)/\11/g' | \
+		# Match query parameters whose values are numbers (possibly with dots) and replace the values with 1, keeping the parameter name and '?' or '&'
+
+
+		sed -E 's/([?&][^=]+=)([^&]*[[:alpha:]][^&]*)/\1VAL/g' | \
+	    	# Match query parameters whose values contain at least one letter and replace the values with "VAL", keeping the parameter name and '?' or '&'
+
+		sort -u >> "${TXTS_DIR}/all_links_cleaned.txt"
+	else
+		echo -e "\e[31mall_links.txt does not exist or there are no links!\e[0m"
+		exit 1
+	fi
+}
+
+
+function collect_all_links(){
+	echo -e "\e[32mStarting collect all unique links in one file (all_links.txt)\e[0m"
+	# collect all unique links
+	ALL_FILES=()
+	if [[ -e "${TXTS_DIR}/dirsearch.txt" ]]; then
+		ALL_FILES+=("${TXTS_DIR}/dirsearch.txt")
+	fi
+	
+	if [[ -e "${TXTS_DIR}/ffuf.txt" ]]; then
+		ALL_FILES+=("${TXTS_DIR}/ffuf.txt")
+	fi
+	
+	if [[ -e "${TXTS_DIR}/gau.txt" ]]; then
+		ALL_FILES+=("${TXTS_DIR}/gau.txt")
+	fi
+	
+	if [[ -e "${TXTS_DIR}/katana.txt" ]]; then
+		ALL_FILES+=("${TXTS_DIR}/katana.txt")
+	fi
+	
+	if [[ -e "${TXTS_DIR}/waymore.txt" ]]; then
+		ALL_FILES+=("${TXTS_DIR}/waymore.txt")
+	fi
+	
+	if (( "${#ALL_FILES[@]}" == 0 )); then
+		echo -e "\e[31mError: No files to collect\e[0m"
+		exit 1
+	fi
+	
+	egrep -iv -h '\.(png|jpg|jpeg|gif|svg|css|woff2?|ttf|pdf|wav|eot|mp4|mp3)(\?|$)' "${ALL_FILES[@]}" | sort -u > "${TXTS_DIR}/all_links.txt"
+	clean_links
+}
+
+
+
+
+
+
+# pick only 200,301,302,403,405 status code
+function filter_status_codes(){
+	echo -e "\e[32mFiltering status codes 200,301,302,403,405 by httpx tool... (Don't Trun Off The Tool! It may take a long time.)\e[0m"
+	if [[ -e "${TXTS_DIR}/all_links_cleaned.txt" ]]; then
+		httpx -l "${TXTS_DIR}/all_links_cleaned.txt" -mc 200,301,302,403,405 -threads "$THREADS" -timeout "$HTTPX_TIMEOUT" -delay "$HTTPX_DELAY" -r 1.1.1.1,8.8.8.8 -nc -json -o "${TXTS_DIR}/filtered_links.json" > /dev/null 2>&1
+	fi
+	
+	if [[ -e "${TXTS_DIR}/filtered_links.json" ]]; then
+		jq -r 'select(.status_code == 200) | .url' "${TXTS_DIR}/filtered_links.json" > "${TXTS_DIR}/200.txt"
+		jq -r 'select(.status_code == 301) | .url' "${TXTS_DIR}/filtered_links.json" > "${TXTS_DIR}/301.txt"
+		jq -r 'select(.status_code == 302) | .url' "${TXTS_DIR}/filtered_links.json" > "${TXTS_DIR}/302.txt"
+		jq -r 'select(.status_code == 403) | .url' "${TXTS_DIR}/filtered_links.json" > "${TXTS_DIR}/403.txt"
+		jq -r 'select(.status_code == 405) | .url' "${TXTS_DIR}/filtered_links.json" > "${TXTS_DIR}/405.txt"
+		rm -f "${TXTS_DIR}/filtered_links.json"
+	fi
+	
+	
+	# remove the empty files
+	if [[ ! -s "${TXTS_DIR}/200.txt" ]]; then
+		rm -f "${TXTS_DIR}/200.txt"
+		
+	elif [[ ! -s "${TXTS_DIR}/301.txt" ]]; then
+		rm -f "${TXTS_DIR}/301.txt"
+		
+	elif [[ ! -s "${TXTS_DIR}/302.txt" ]]; then
+		rm -f "${TXTS_DIR}/302.txt"
+		
+	elif [[ ! -s "${TXTS_DIR}/403.txt" ]]; then
+		rm -f "${TXTS_DIR}/403.txt"
+		
+	elif [[ ! -s "${TXTS_DIR}/405.txt" ]]; then
+		rm -f "${TXTS_DIR}/405.txt"
+	fi
+}
+
+
+
+
+
+
+# Fetching links with parmeters from 200 status code
+function fetch_params(){
+	echo -e "\e[32mFetching links only with params...\e[0m"
+	if [[ -e "${TXTS_DIR}/200.txt" ]]; then
+		grep -E '\?.+=.+' "${TXTS_DIR}/200.txt" > "${TXTS_DIR}/200_params.txt"
+		
+		# remove the empty file
+		if [[ ! -s "${TXTS_DIR}/200_params.txt" ]]; then
+			rm -f "${TXTS_DIR}/200_params.txt"
+		fi
+		
+		
+	else
+		echo -e "\e[31mNo links with 200 status code!\e[0m"
+		return 1
+	fi
+}
+
+
+
+
+# Extracting links without parmeters from 200 status code
+function fetch_without_params(){
+	echo -e "\e[32mFetching links without params...\e[0m"
+	if [[ -e "${TXTS_DIR}/200.txt" ]]; then
+		grep -v -E '\?.+=.+' "${TXTS_DIR}/200.txt" > "${TXTS_DIR}/200_no_params.txt"
+		
+		# remove the empty file
+		if [[ ! -s "${TXTS_DIR}/200_no_params.txt" ]]; then
+			rm -f "${TXTS_DIR}/200_no_params.txt"
+		fi
+	else
+		echo -e "\e[31mNo links with 200 status code!\e[0m"
+		return 1
+	fi
+}
+
+
+
+# Fetching js files from 200.txt
+function fetch_js(){
+	echo -e "\e[32mFetching JavaScript links ...\e[0m"
+	if [[ -e "${TXTS_DIR}/200.txt" ]]; then
+		
+		# Get js files
+		grep -i -E '\.js($|[?&])' "${TXTS_DIR}/200.txt" > "${TXTS_DIR}/js.txt"
+		
+		# remove js files from 200.txt
+		grep -vi -E '\.js($|[?&])' "${TXTS_DIR}/200.txt" > "${TXTS_DIR}/200_tmp.txt" && mv "${TXTS_DIR}/200_tmp.txt" "${TXTS_DIR}/200.txt"
+		
+		
+		# remove the empty file
+		if [[ ! -s "${TXTS_DIR}/js.txt" ]]; then
+			rm -f "${TXTS_DIR}/js.txt"
+		fi
+	else
+		echo -e "\e[31mNo links with 200 status code!\e[0m"
+		return 1
+	fi
+}
+
+
+
+
+# Fetching links with http methods responses (POST,PUT,PATCH,DELETE) on 200_params.txt
+function http_methods(){
+	echo -e "\e[32mFetching https methods responses (POST,PUT,PATCH,DELETE)...(Don't Trun Off The Tool! It may take a long time.)\e[0m"
+	
+	if [[ ! -e "${TXTS_DIR}/200_params.txt" ]]; then
+		echo -e "\e[31mNo links with paramas (200 status code)!\e[0m"
+		return 1
+	fi
+	
+	
+	
+	httpx -l "${TXTS_DIR}/200_params.txt" -x POST,PUT,PATCH,DELETE -probe -threads "$THREADS" -timeout "$HTTPX_TIMEOUT" -delay "$HTTPX_DELAY" -r 1.1.1.1,8.8.8.8 -j -o "${TXTS_DIR}/http_methods.json" > /dev/null 2>&1
+	
+	
+	
+	
+	if [[ -e "${TXTS_DIR}/http_methods.json" ]]; then
+		jq -r 'select((.status_code >= 200) and (.status_code < 300)) | "\(.url) -------> \([.method])  \(.status_code)"' "${TXTS_DIR}/http_methods.json" | sort -u > "${TXTS_DIR}/http_methods.txt"
+		
+	fi
+	
+	
+	
+	
+
+}
+
+
+
+
+
+# links enumeration full scan
+function urls_full_scan(){
+	katana_scan
+	gau_scan
+	dirsearch_scan
+	ffuf_scan
+	waymore_scan
+	collect_all_links
+	filter_status_codes
+	fetch_js
+	fetch_params
+	fetch_without_params
+	http_methods
+	links_report
+	
+}
+
+
+
+
+# urls enumeration spesific scan
+function urls_specific_scan(){
+	for tool in "${TOOLS_OPT[@]}"; do
+		case "$tool" in
+			gau)
+				gau_scan
+				;;
+				
+			dirsearch)
+				dirsearch_scan
+				;;
+			
+			katana)
+				katana_scan
+				;;
+				
+			ffuf)
+				ffuf_scan
+				;;
+			waymore)
+				waymore_scan
+				;;
+		esac
+	done
+	printf "\n"
+	collect_all_links
+	filter_status_codes
+	fetch_js
+	fetch_params
+	fetch_without_params
+	http_methods
+	links_report
+	
+}

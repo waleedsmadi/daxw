@@ -1,0 +1,216 @@
+#!/bin/bash
+
+# This file has subdomain enumeration functions
+# after finish from each tool.. it collects all results to one file and picks just the 200 status code
+
+
+source "${CURRENT_DIR}/reports.lib"
+
+
+
+
+
+
+
+# Enumeration subdomain
+
+function sublister_passive_scan(){
+	echo -e "\e[32mFetching subdomains by sublist3r tool -passive-...(Don't Trun Off The Tool! It may take a long time.)\e[0m"
+	sublist3r_v2 -d "$DOMAIN" -t "$THREADS" -n -e baidu,yahoo,google,bing,ask,netcraft,threatcrowd,ssl,passivedns,shrewdeye -o "${TXTS_DIR}/sublister_passive" > /dev/null
+
+}
+
+
+
+function sublister_active_scan(){
+	echo -e "\e[32mFetching subdomains by sublist3r -active-...(Don't Trun Off The Tool! It may take a long time.)\e[0m"
+	sublist3r_v2 -d "$DOMAIN" -t "$THREADS" -n -b "$WORDLIST_SUBDOMAINS" -e baidu,yahoo,google,bing,ask,netcraft,threatcrowd,ssl,passivedns,shrewdeye -o "${TXTS_DIR}/sublister_active" > /dev/null
+}
+
+
+
+
+
+function amass_passive_scan(){
+	echo -e "\e[32mFetching subdomains by amass tool -passive-...(Don't Trun Off The Tool! It may take a long time.)\e[0m"
+	amass enum -passive -d "$DOMAIN" -timeout "$AMASS_TIMEOUT"  -nocolor -oA "${TXTS_DIR}/amass_passive"
+}
+
+
+
+function amass_active_scan(){
+	echo -e "\e[32mFetching subdomains by amass tool -active-...(Don't Trun Off The Tool! It may take a long time.)\e[0m"
+	amass enum -active -d "$DOMAIN" -brute -w "$WORDLIST_SUBDOMAINS" -dns-qps "$AMASS_DNS_QPS" -trqps "$AMASS_TRQPS" -rqps "$AMASS_RQPS" \
+	-tr 1.1.1.1 -tr 8.8.8.8 -timeout "$AMASS_TIMEOUT" -nocolor -oA "${TXTS_DIR}/amass_active"
+}
+
+
+
+function subfinder_scan(){
+	echo -e "\e[32mFetching subdomains by subfinder tool...(Don't Trun Off The Tool! It may take a long time.)\e[0m"
+	subfinder -d "$DOMAIN" -t "$THREADS" -timeout "$SUBFINDER_TIMEOUT" -max-time "$SUBFINDER_MAX_TIME" -silent -no-color -o "${TXTS_DIR}/subfinder" > /dev/null
+}
+
+
+
+
+function assetfinder_scan(){
+	echo -e "\e[32mFetching subdomains by assetfinder tool...\e[0m"
+	assetfinder -subs-only "$DOMAIN" > "${TXTS_DIR}/assetfinder"
+}
+
+
+
+
+function gobuster_scan(){
+	echo -e "\e[32mFetching subdomains by gobuster tool...\e[0m"
+	gobuster dns --do "$DOMAIN" -timeout "$GOBUSTER_TIMEOUT" -t "$THREADS" -no-color -resolver 1.1.1.1 -resolver 8.8.8.8 \
+	-w "$WORDLIST_SUBDOMAINS" -delay "$GOBUSTER_DELAY" --wildcard -o "${TXTS_DIR}/gobuster" > /dev/null
+}
+
+
+
+
+function crt_scan(){
+	echo -e "\e[32mFetching subdomains by crt...\e[0m"
+	curl "https://crt.sh/?q=$DOMAIN&output=json" -o "${TXTS_DIR}/crt_json.json" -s
+	if [[ -e "${TXTS_DIR}/crt_json.json" ]]; then
+		jq -r '.[] | .name_value' "${TXTS_DIR}/crt_json.json" > "${TXTS_DIR}/crt" && rm -f "${TXTS_DIR}/crt_json.json"
+	fi
+}
+
+
+
+# Collect all results in one file
+function collect_all_subdomains(){
+	echo -e "\e[32mStarting collect all subdomains in one file (subdomains.txt) ...\e[0m"
+	# collect all unique domains
+	ALL_FILES=()
+	if [[ -f "${TXTS_DIR}/sublister_passive" ]]; then
+		ALL_FILES+=("${TXTS_DIR}/sublister_passive")
+	fi
+	
+	if [[ -f "${TXTS_DIR}/sublister_active" ]]; then
+		ALL_FILES+=("${TXTS_DIR}/sublister_active")
+	fi
+	
+	if [[ -f "${TXTS_DIR}/amass_passive.txt" ]]; then
+		ALL_FILES+=("${TXTS_DIR}/amass_passive.txt")
+	fi
+	
+	if [[ -f "${TXTS_DIR}/amass_active.txt" ]]; then
+		ALL_FILES+=("${TXTS_DIR}/amass_active.txt")
+	fi
+	
+	if [[ -f "${TXTS_DIR}/subfinder" ]]; then
+		ALL_FILES+=("${TXTS_DIR}/subfinder")
+	fi
+	
+	if [[ -f "${TXTS_DIR}/assetfinder" ]]; then
+		ALL_FILES+=("${TXTS_DIR}/assetfinder")
+	fi
+	
+	
+	if [[ -f "${TXTS_DIR}/gobuster" ]]; then
+		ALL_FILES+=("${TXTS_DIR}/gobuster")
+	fi
+	
+	
+	if [[ -f "${TXTS_DIR}/crt" ]]; then
+		ALL_FILES+=("${TXTS_DIR}/crt")
+	fi
+	
+	
+	if (( "${#ALL_FILES[@]}" == 0 )); then
+		echo -e "\e[31mError: No files to collect\e[0m"
+		exit 1
+	fi
+
+
+	
+	SUBDOMAIN_REGEX='([a-zA-Z0-9-]+\.)*'"$DOMAIN_WITHOUT_TLD"'\.(com|net|org|tv|io|info|au|fr|us|su|ps|jo|ca|gov|dev|tech|edu|ai|me|app|co|biz|mil)'
+	grep -h -oP "$SUBDOMAIN_REGEX" "${ALL_FILES[@]}" | sort -u > "${TXTS_DIR}/subdomains"
+}
+
+
+
+
+
+# Bring just the 200 status code
+function httpx_for_subdomains(){
+	echo -e "\e[32mFiltering status codes 200 by httpx tool..(Don't Trun Off The Tool! It may take a long time.)\e[0m"
+	httpx -l "${TXTS_DIR}/subdomains" -mc 200 -threads "$THREADS" -timeout "$HTTPX_TIMEOUT" -delay "$HTTPX_DELAY" -r 1.1.1.1,8.8.8.8 -silent -nc -json -o "${TXTS_DIR}/httpx_only_200.json" > /dev/null
+	if [[ -e "${TXTS_DIR}/httpx_only_200.json" ]]; then
+		jq -r 'select(.status_code|tostring|test("^(200)$")) | .url' "${TXTS_DIR}/httpx_only_200.json" | sort -u > "${TXTS_DIR}/subdomains_200"
+		rm -f "${TXTS_DIR}/httpx_only_200.json"
+	fi
+}
+
+
+
+
+
+
+# subdomain enumeration full scan
+function subs_full_scan(){
+	sublister_passive_scan
+	sublister_active_scan
+	amass_passive_scan
+	amass_active_scan
+	subfinder_scan
+	assetfinder_scan
+	gobuster_scan
+	crt_scan
+	collect_all_subdomains
+	httpx_for_subdomains
+	subs_report
+}
+
+
+
+# subdomain enumeration spesific scan
+function subs_specific_scan(){
+	for tool in "${TOOLS_OPT[@]}"; do
+		case "$tool" in
+			sublist3r-passive)
+				sublister_passive_scan
+				;;
+				
+			sublist3r-active)
+				sublister_active_scan
+				;;
+			
+			amass-passive)
+				amass_passive_scan
+				;;
+				
+			amass-active)
+				amass_active_scan
+				;;
+				
+			subfinder)
+				subfinder_scan
+				;;
+				
+			assetfinder)
+				assetfinder_scan
+				;;
+				
+			gobuster)
+				gobuster_scan
+				;;
+			
+			crt)
+				crt_scan
+				;;
+		esac
+	done
+	printf "\n"
+	collect_all_subdomains
+	httpx_for_subdomains
+	subs_report
+	
+}
+
+
+
