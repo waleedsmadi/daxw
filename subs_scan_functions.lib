@@ -65,7 +65,7 @@ function assetfinder_scan(){
 function gobuster_scan(){
 	echo -e "\e[32mFetching subdomains by gobuster tool...\e[0m"
 	gobuster dns --do "$DOMAIN" -timeout "$GOBUSTER_TIMEOUT" -t "$THREADS" -no-color -resolver 1.1.1.1 -resolver 8.8.8.8 \
-	-w "$WORDLIST_SUBDOMAINS" -delay "$GOBUSTER_DELAY" --wildcard -o "${TXTS_DIR}/gobuster" > /dev/null
+	-w "$WORDLIST_SUBDOMAINS" -delay "$GOBUSTER_DELAY" --no-error --no-progress --wildcard -o "${TXTS_DIR}/gobuster" > /dev/null
 }
 
 
